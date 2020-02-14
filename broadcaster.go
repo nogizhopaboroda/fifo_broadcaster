@@ -9,9 +9,16 @@ import (
         "./tcp_broadcaster"
 )
 
-func broadcast(line []byte){
-  wsBroadcaster.Broadcast(line)
-  tcpBroadcaster.Broadcast(line)
+var messages = make(chan []byte)
+
+func Broadcast(){
+  for {
+          select {
+          case message := <-messages:
+              wsBroadcaster.Broadcast(message)
+              tcpBroadcaster.Broadcast(message)
+          }
+  }
 }
 
 
@@ -27,8 +34,7 @@ func readSource(fileName string) {
 	for {
 		line, err := reader.ReadBytes('\n')
 		if err == nil {
-                  broadcast([]byte(line))
-                  // h.messages <- []byte(line)
+                  messages <- []byte(line)
 		}
 	}
 }
@@ -43,6 +49,7 @@ func main() {
   go wsBroadcaster.Start(*wsPortNo)
   go tcpBroadcaster.Start(*tcpPortNo)
 
+  go Broadcast()
 
   readSource(*fileName)
 }
