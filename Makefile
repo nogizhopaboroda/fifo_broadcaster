@@ -6,7 +6,7 @@ tools:
 	go get -u github.com/tcnksm/ghr
 
 build:
-	GOARM=7 go run github.com/mitchellh/gox -os="darwin linux" -arch="386 amd64 arm" -osarch="!darwin/arm" -output "${OUTPUT_DIR}/pkg/{{.OS}}_{{.Arch}}/{{.Dir}}"
+	GOARM=7 go run github.com/mitchellh/gox -verbose -os="darwin linux" -arch="386 amd64 arm" -osarch="!darwin/arm" -output "${OUTPUT_DIR}/pkg/{{.OS}}_{{.Arch}}/{{.Dir}}"
 
 targz:
 	mkdir -p ${OUTPUT_DIR}/dist

@@ -4,27 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
-	// "encoding/binary"
-	"flag"
-	// "fmt"
 	"log"
 	"os"
-	// "io"
-	"./tcp_broadcaster"
-	"./ws_broadcaster"
 )
-
-var messages = make(chan []byte)
-
-func Broadcast() {
-	for {
-		select {
-		case message := <-messages:
-			wsBroadcaster.Broadcast(message)
-			tcpBroadcaster.Broadcast(message)
-		}
-	}
-}
 
 type reader interface {
 	ReadString(delim byte) (line string, err error)
@@ -45,7 +27,21 @@ func read(r reader, delim []byte) (line []byte, err error) {
 	}
 }
 
-func readSource(fileName string, bufferSize int, chunkSeparator string, discardSeparator bool) {
+type ReaderParams struct {
+	fileName         string
+	bufferSize       int
+	chunkSeparator   string
+	discardSeparator bool
+	channel          chan []byte
+}
+
+func ReadSource(readerParams ReaderParams) {
+	fileName := readerParams.fileName
+	bufferSize := readerParams.bufferSize
+	chunkSeparator := readerParams.chunkSeparator
+	discardSeparator := readerParams.discardSeparator
+	channel := readerParams.channel
+
 	file, err := os.OpenFile(fileName, os.O_RDONLY, os.ModeNamedPipe)
 	if err != nil {
 		log.Fatal("Open named pipe file error:", err)
@@ -58,7 +54,6 @@ func readSource(fileName string, bufferSize int, chunkSeparator string, discardS
 	//Experimenting with buffers
 	//TODO refactor this somehow
 	if bufferSize == 0 {
-		// separator := []byte{byte(0), byte(0), byte(0), byte(1)}
 		separator, err := hex.DecodeString(chunkSeparator)
 		if err != nil {
 			log.Fatal("Invalid separator: ", err)
@@ -73,8 +68,7 @@ func readSource(fileName string, bufferSize int, chunkSeparator string, discardS
 			}
 
 			if err == nil {
-				// fmt.Println(line)
-				messages <- chunk
+				channel <- chunk
 			}
 		}
 	} else {
@@ -89,21 +83,4 @@ func readSource(fileName string, bufferSize int, chunkSeparator string, discardS
 		}
 	}
 
-}
-
-func main() {
-	bufferSize := flag.Int("b", 0, "buffer size (in bytes)")
-	wsPortNo := flag.Int("wp", 8080, "websocket server port")
-	tcpPortNo := flag.Int("tp", 1235, "tcp server port")
-	fileName := flag.String("i", "", "input source")
-	chunkSeparator := flag.String("s", "0a", "chunks separator")
-	discardSeparator := flag.Bool("ds", false, "discard separator")
-	flag.Parse()
-
-	go wsBroadcaster.Start(*wsPortNo)
-	go tcpBroadcaster.Start(*tcpPortNo)
-
-	go Broadcast()
-
-	readSource(*fileName, *bufferSize, *chunkSeparator, *discardSeparator)
 }
