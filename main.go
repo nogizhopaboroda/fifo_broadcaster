@@ -19,7 +19,7 @@ func Broadcast() {
 }
 
 var opts struct {
-	InputSource string `short:"i" long:"input" description:"Input source" required:"true"`
+	InputSource string `short:"i" long:"input" description:"Input source. Filename or '-' to read from stdin" required:"true"`
 
 	BufferSize int `short:"b" long:"buffer-size" description:"Buffer size"`
 

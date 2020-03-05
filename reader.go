@@ -42,12 +42,19 @@ func ReadSource(readerParams ReaderParams) {
 	keepSeparator := readerParams.keepSeparator
 	channel := readerParams.channel
 
-	file, err := os.OpenFile(fileName, os.O_RDONLY, os.ModeNamedPipe)
-	if err != nil {
-		log.Fatal("Open named pipe file error:", err)
-	}
+	var file *os.File
 
-	defer file.Close()
+	if fileName == "-" {
+		file = os.Stdin
+	} else {
+		var err error
+		file, err = os.OpenFile(fileName, os.O_RDONLY, os.ModeNamedPipe)
+		if err != nil {
+			log.Fatal("Open named pipe file error:", err)
+		}
+
+		defer file.Close()
+	}
 
 	reader := bufio.NewReader(file)
 
