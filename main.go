@@ -3,7 +3,6 @@ package main
 import (
 	"./tcp_broadcaster"
 	"./ws_broadcaster"
-	// "flag"
 	"github.com/jessevdk/go-flags"
 )
 
@@ -22,15 +21,15 @@ func Broadcast() {
 var opts struct {
 	InputSource string `short:"i" long:"input" description:"Input source" required:"true"`
 
-	BufferSize int `short:"b" long:"buffer-size" description:"Buffer size" default:"0"`
+	BufferSize int `short:"b" long:"buffer-size" description:"Buffer size"`
 
 	WsPortNumber int `short:"w" long:"ws-port" description:"WebSocker server port number" default:"8080"`
 
 	TcpPortNumber int `short:"t" long:"tcp-port" description:"TCP server port number" default:"1235"`
 
-	ChunkSeparator string `short:"s" long:"chunk-separator" description:"Chunk separator"`
+	ChunkSeparator string `short:"s" long:"chunk-separator" description:"Chunk separator" default:"0a"`
 
-	DiscardSeparator bool `short:"d" long:"discard-separator" description:"Discard separator"`
+	KeepSeparator string `short:"k" long:"keep-separator" description:"Keep separator" choice:"none" choice:"end-of-current" choice:"beginning-of-next" default:"none"`
 }
 
 func main() {
@@ -47,9 +46,7 @@ func main() {
 	wsPortNo := opts.WsPortNumber
 	tcpPortNo := opts.TcpPortNumber
 	chunkSeparator := opts.ChunkSeparator
-	discardSeparator := opts.DiscardSeparator
-
-	// flag.Parse()
+	keepSeparator := opts.KeepSeparator
 
 	go wsBroadcaster.Start(wsPortNo)
 	go tcpBroadcaster.Start(tcpPortNo)
@@ -57,11 +54,11 @@ func main() {
 	go Broadcast()
 
 	params := ReaderParams{
-		fileName:         fileName,
-		bufferSize:       bufferSize,
-		chunkSeparator:   chunkSeparator,
-		discardSeparator: discardSeparator,
-		channel:          messages,
+		fileName:       fileName,
+		bufferSize:     bufferSize,
+		chunkSeparator: chunkSeparator,
+		keepSeparator:  keepSeparator,
+		channel:        messages,
 	}
 
 	ReadSource(params)

@@ -28,18 +28,18 @@ func read(r reader, delim []byte) (line []byte, err error) {
 }
 
 type ReaderParams struct {
-	fileName         string
-	bufferSize       int
-	chunkSeparator   string
-	discardSeparator bool
-	channel          chan []byte
+	fileName       string
+	bufferSize     int
+	chunkSeparator string
+	keepSeparator  string
+	channel        chan []byte
 }
 
 func ReadSource(readerParams ReaderParams) {
 	fileName := readerParams.fileName
 	bufferSize := readerParams.bufferSize
 	chunkSeparator := readerParams.chunkSeparator
-	discardSeparator := readerParams.discardSeparator
+	keepSeparator := readerParams.keepSeparator
 	channel := readerParams.channel
 
 	file, err := os.OpenFile(fileName, os.O_RDONLY, os.ModeNamedPipe)
@@ -51,20 +51,24 @@ func ReadSource(readerParams ReaderParams) {
 
 	reader := bufio.NewReader(file)
 
-	//Experimenting with buffers
-	//TODO refactor this somehow
 	if bufferSize == 0 {
 		separator, err := hex.DecodeString(chunkSeparator)
 		if err != nil {
 			log.Fatal("Invalid separator: ", err)
 		}
+
+		var buff []byte
 		for {
 			line, err := read(reader, separator)
 			var chunk []byte
-			if discardSeparator == true {
+			switch keepSeparator {
+			case "none":
 				chunk = line
-			} else {
-				chunk = append(separator, line...)
+			case "beginning-of-next":
+				chunk = append(buff, line...)
+				buff = append(separator[:0:0], separator...)
+			case "end-of-current":
+				chunk = append(line, separator...)
 			}
 
 			if err == nil {
