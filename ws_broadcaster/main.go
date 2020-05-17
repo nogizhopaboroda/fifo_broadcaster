@@ -2,17 +2,17 @@ package wsBroadcaster
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
-	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
-  ReadBufferSize:  1024,
-  WriteBufferSize: 1024,
-  CheckOrigin: func(r *http.Request) bool {
-      return true
-  },
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 type hub struct {
@@ -47,7 +47,7 @@ func (h *hub) sendAll(message []byte) {
 }
 
 func Broadcast(message []byte) {
-  h.messages <- []byte(message)
+	h.messages <- []byte(message)
 }
 
 func (h *hub) Run() {
@@ -56,7 +56,7 @@ func (h *hub) Run() {
 		select {
 		// Client has connected
 		case c := <-h.addConn:
-                        log.Println("WS client connected:", id)
+			log.Println("WS client connected:", id)
 			h.connections[id] = c
 			id++
 		// A new message has been received
@@ -65,8 +65,6 @@ func (h *hub) Run() {
 		}
 	}
 }
-
-
 
 // Handle upgrades to websocket
 func connectionHandler(w http.ResponseWriter, r *http.Request) {
@@ -77,9 +75,16 @@ func connectionHandler(w http.ResponseWriter, r *http.Request) {
 	h.addConn <- c
 }
 
-func Start(portNo int){
-  go h.Run()
-  log.Printf("Serving WS on %d...", portNo)
-  http.HandleFunc("/", connectionHandler)
-  http.ListenAndServe(fmt.Sprintf(":%d", portNo), nil)
+func Start(portNo int, tls bool, certFile string, keyFile string) {
+	go h.Run()
+	http.HandleFunc("/", connectionHandler)
+	var err error
+	if tls == true {
+		log.Printf("Serving secure WS on %d...", portNo)
+		err = http.ListenAndServeTLS(fmt.Sprintf(":%d", portNo), certFile, keyFile, nil)
+	} else {
+		log.Printf("Serving WS on %d...", portNo)
+		err = http.ListenAndServe(fmt.Sprintf(":%d", portNo), nil)
+	}
+	log.Fatal(err)
 }

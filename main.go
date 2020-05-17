@@ -23,13 +23,19 @@ var opts struct {
 
 	BufferSize int `short:"b" long:"buffer-size" description:"Buffer size"`
 
-	WsPortNumber int `short:"w" long:"ws-port" description:"WebSocker server port number" default:"8080"`
+	WsPortNumber int `short:"w" long:"ws-port" description:"WebSocker server port number"`
 
-	TcpPortNumber int `short:"t" long:"tcp-port" description:"TCP server port number" default:"1235"`
+	TcpPortNumber int `short:"t" long:"tcp-port" description:"TCP server port number"`
 
 	ChunkSeparator string `short:"s" long:"chunk-separator" description:"Chunk separator" default:"0a"`
 
 	KeepSeparator string `short:"k" long:"keep-separator" description:"Keep separator" choice:"none" choice:"end-of-current" choice:"beginning-of-next" default:"none"`
+
+	TLS bool `long:"use-tls" description:"Use Websocket TLS"`
+
+	TLSCertFile string `long:"tls-certificate-file" description:"TLS Certificate File (applied if --use-tls is true)" default:""`
+
+	TLSCertKey string `long:"tls-certificate-key" description:"TLS Certificate Key File (applied if --use-tls is true)" default:""`
 }
 
 func main() {
@@ -48,8 +54,16 @@ func main() {
 	chunkSeparator := opts.ChunkSeparator
 	keepSeparator := opts.KeepSeparator
 
-	go wsBroadcaster.Start(wsPortNo)
-	go tcpBroadcaster.Start(tcpPortNo)
+	tls := opts.TLS
+	tlsCertFile := opts.TLSCertFile
+	tlsCertKey := opts.TLSCertKey
+
+	if wsPortNo != 0 {
+		go wsBroadcaster.Start(wsPortNo, tls, tlsCertFile, tlsCertKey)
+	}
+	if tcpPortNo != 0 {
+		go tcpBroadcaster.Start(tcpPortNo)
+	}
 
 	go Broadcast()
 
